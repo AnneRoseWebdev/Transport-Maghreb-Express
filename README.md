@@ -12,3 +12,7 @@ Lancement du projet : django-admin startproject backend .
 
 Création du coeur de notre application : python manage.py startapp fleet
 
+créer un administrateur pour notre interface : python manage.py createsuperuser
+
+Commande pour lancer notre serveur : python manage.py runserver
+
