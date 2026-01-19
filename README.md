@@ -16,3 +16,7 @@ créer un administrateur pour notre interface : python manage.py createsuperuser
 
 Commande pour lancer notre serveur : python manage.py runserver
 
+ouvrir le navigateur et utiliser le lien : http://127.0.0.1:8000/admin/ pour ce connecter a l'espace administrateur
+   . Nom d'utilisateur : admin
+   . Mot de passe : password123
+
