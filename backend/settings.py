@@ -151,3 +151,9 @@ STATIC_URL = 'static/'
 STATICFILES_DIRS = [
     os.path.join(BASE_DIR, 'fleet/static'),
 ]
+
+
+# Redirection après connexion réussie
+LOGIN_REDIRECT_URL = 'map' 
+# Redirection après déconnexion
+LOGOUT_REDIRECT_URL = 'login'
