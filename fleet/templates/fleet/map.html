@@ -1,14 +1,38 @@
 {% load static %}
 <!DOCTYPE html>
-<html>
+<html lang="fr">
 <head>
+    <meta charset="UTF-8">
     <title>Transport Maghreb Express</title>
+    
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    
     <link rel="stylesheet" href="{% static 'fleet/map.css' %}">
 </head>
 <body>
+
+    <div class="dashboard-overlay">
+        <div class="brand">
+            🚛 Transport Maghreb Express
+        </div>
+
+        <div class="status-panel">
+            <div class="status-text">
+                <span class="live-dot"></span> SYSTÈME EN LIGNE
+            </div>
+            
+            <form action="{% url 'logout' %}" method="post" style="margin:0;">
+                {% csrf_token %}
+                <button type="submit" class="btn-logout">Déconnexion</button>
+            </form>
+        </div>
+    </div>
+    
+
     <div id="map"></div>
+
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="{% static 'fleet/map.js' %}"></script>
+
 </body>
 </html>

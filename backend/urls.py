@@ -19,5 +19,7 @@ from django.urls import path, include
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('', include('fleet.urls')),  
+    # pour gérer login/logout automatiquement
+    path('accounts/', include('django.contrib.auth.urls')), 
+    path('', include('fleet.urls')),
 ]
