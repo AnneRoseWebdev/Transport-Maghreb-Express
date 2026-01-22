@@ -1,9 +1,10 @@
-from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from .models import Vehicule
 from .serializers import VehiculeSerializer
 from django.shortcuts import render
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required  # Pour le login
+from rest_framework.decorators import api_view             # Pour l'API
+
 
 # Vue pour la page HTML (déjà faite hier)
 def map_view(request):
