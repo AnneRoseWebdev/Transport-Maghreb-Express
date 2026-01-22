@@ -1,91 +1,134 @@
-/* Réinitialisation de base */
-body {
-    margin: 0;
-    padding: 0;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    overflow: hidden; /* Pour éviter les barres de défilement */
+/* --- PALETTE DE COULEURS --- */
+:root {
+    --primary-color: #163E50;  /* Bleu Foncé */
+    --bg-color: #E8EAF6;       /* Lavande Pâle */
+    --accent-color: #76C893;   /* Vert Menthe */
+    --alert-color: #D90429;    /* Rouge Alerte */
+    --warning-color: #FF9F1C;  /* Orange Warning */
+    --text-white: #ffffff;
 }
 
-/* La carte prend tout l'écran */
-#map {
+body { 
+    margin: 0; 
+    padding: 0; 
+    font-family: 'Roboto', sans-serif; 
+    background-color: var(--bg-color);
+    display: flex;
+    flex-direction: column;
     height: 100vh;
-    width: 100%;
-    z-index: 1;
 }
 
-/* === LE DASHBOARD FLOTTANT === */
-.dashboard-overlay {
-    position: absolute;
-    top: 20px;
-    left: 50%;
-    transform: translateX(-50%); /* Centrage horizontal parfait */
-    width: 90%;
-    max-width: 1000px;
-    background: white;
-    padding: 12px 25px;
-    border-radius: 8px;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+/* En-tête */
+header {
+    background-color: var(--primary-color);
+    color: var(--text-white);
+    padding: 15px 20px;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    z-index: 1000; /* IMPORTANT : Doit être supérieur au z-index de la carte */
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    z-index: 1001;
 }
 
-/* Titre / Logo */
-.brand {
-    font-size: 18px;
-    color: #163E50;
-    font-weight: bold;
-    display: flex;
-    align-items: center;
-    gap: 10px;
+header h1 { margin: 0; font-size: 1.2rem; }
+header .status { font-size: 0.9rem; color: var(--accent-color); font-weight: bold; }
+
+/* Conteneur Carte */
+#map { 
+    flex-grow: 1; 
+    width: 100%; 
+    z-index: 1;
 }
 
-/* Zone de droite (Statut + Bouton) */
-.status-panel {
-    display: flex;
-    align-items: center;
-    gap: 20px;
+/* Boîte Flottante (Stats) */
+.info-card {
+    position: absolute;
+    top: 80px; 
+    right: 20px;
+    background: white;
+    padding: 20px;
+    width: 250px;
+    border-left: 5px solid var(--accent-color);
+    border-radius: 8px;
+    box-shadow: 0 4px 15px rgba(22, 62, 80, 0.3);
+    z-index: 1000;
 }
 
-.status-text {
+.info-card h3, .route-card h3 {
+    margin-top: 0;
+    color: var(--primary-color);
+    border-bottom: 1px solid var(--bg-color);
+    padding-bottom: 10px;
+}
+
+.stat-item {
+    margin: 10px 0;
     display: flex;
+    justify-content: space-between;
     align-items: center;
-    font-size: 14px;
     color: #555;
-    font-weight: 500;
 }
 
-/* Le point vert qui clignote */
-.live-dot {
+.badge {
+    background-color: var(--primary-color);
+    color: white;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-weight: bold;
+}
+
+/* Indicateur Live (Pulse) */
+.live-indicator {
     height: 10px;
     width: 10px;
-    background-color: #76C893;
+    background-color: var(--accent-color);
     border-radius: 50%;
     display: inline-block;
-    margin-right: 8px;
-    animation: pulse 1.5s infinite;
+    box-shadow: 0 0 0 rgba(118, 200, 147, 0.4);
+    animation: pulse 2s infinite;
 }
 
-/* Animation du clignotement */
 @keyframes pulse {
     0% { box-shadow: 0 0 0 0 rgba(118, 200, 147, 0.7); }
     70% { box-shadow: 0 0 0 10px rgba(118, 200, 147, 0); }
     100% { box-shadow: 0 0 0 0 rgba(118, 200, 147, 0); }
 }
 
-/* Bouton Déconnexion */
-.btn-logout {
-    background: #D90429;
+/* Panneau Itinéraire */
+.route-card {
+    position: absolute;
+    top: 80px; 
+    left: 20px; 
+    background: white;
+    padding: 20px;
+    width: 250px;
+    border-left: 5px solid var(--primary-color);
+    border-radius: 8px;
+    box-shadow: 0 4px 15px rgba(22, 62, 80, 0.3);
+    z-index: 1000;
+}
+
+.route-card select {
+    width: 100%;
+    padding: 8px;
+    margin-bottom: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    background-color: var(--bg-color);
+}
+
+.route-card button {
+    width: 100%;
+    padding: 10px;
+    background-color: var(--primary-color);
     color: white;
     border: none;
-    padding: 8px 16px;
     border-radius: 4px;
     cursor: pointer;
     font-weight: bold;
-    transition: background-color 0.3s;
+    transition: background 0.3s;
 }
 
-.btn-logout:hover {
-    background: #b00320;
+.route-card button:hover {
+    background-color: var(--accent-color);
 }

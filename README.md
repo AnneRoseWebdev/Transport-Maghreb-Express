@@ -1,4 +1,5 @@
 # Transport-Maghreb-Express
+# Application de suivi de flotte GPS en temps réel développée avec Django et GeoDjango.
 Projet de gestion de transport
 
 Crée l'environnement virtuel : python -m venv venv.
