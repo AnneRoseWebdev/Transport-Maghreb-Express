@@ -1,16 +1,19 @@
 from rest_framework import serializers
+from rest_framework_gis.serializers import GeoFeatureModelSerializer # Utilisation de la librairie SIG
 from .models import Vehicule
 
-
-class VehiculeSerializer(serializers.ModelSerializer):
-    # On crée un champ spécial qui va contenir le résultat de ton algo
+class VehiculeSerializer(GeoFeatureModelSerializer):
+    # On garde ton champ calculé intelligent
     diagnostic = serializers.SerializerMethodField()
 
     class Meta:
         model = Vehicule
-        # On liste TOUT ce que le JavaScript a besoin de savoir
-        fields = ['id', 'immatriculation', 'statut', 'carburant_niveau', 'kilometrage', 'diagnostic', 'position_actuelle']
+        # C'est LA différence : on dit quel champ contient la géométrie
+        geo_field = "position_actuelle" 
+        
+        # On inclut tous les champs nécessaires
+        fields = ['id', 'immatriculation', 'statut', 'carburant_niveau', 'kilometrage', 'diagnostic']
 
     def get_diagnostic(self, obj):
-        # C'est ici qu'on appelle l'intelligence codée par Anne Rose
+        # On appelle ta méthode intelligente définie dans models.py
         return obj.diagnostic_moteur()

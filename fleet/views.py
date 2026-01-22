@@ -1,23 +1,51 @@
-from rest_framework.response import Response
-from .models import Vehicule
-from .serializers import VehiculeSerializer
 from django.shortcuts import render
-from django.contrib.auth.decorators import login_required  # Pour le login
-from rest_framework.decorators import api_view             # Pour l'API
+from rest_framework import viewsets
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+from .models import Vehicule, Trajet
+from .serializers import VehiculeSerializer
+from .utils import get_shortest_path, CITIES_COORDS 
 
+# 1. API REST Standard (CRUD)
+class VehiculeViewSet(viewsets.ModelViewSet):
+    queryset = Vehicule.objects.all()
+    serializer_class = VehiculeSerializer
 
-# Vue pour la page HTML (déjà faite hier)
+# 2. Vue HTML
 def map_view(request):
     return render(request, 'fleet/map.html')
 
-# NOUVELLE VUE : L'API JSON
+# 3. API Itinéraire (Sécurisée et Standardisée)
 @api_view(['GET'])
-def api_vehicules(request):
-    vehicules = Vehicule.objects.all()
-    serializer = VehiculeSerializer(vehicules, many=True)
-    return Response({"type": "FeatureCollection", "features": serializer.data})
+def api_calculate_route(request):
+    """
+    Endpoint: /api/route/?start=Tanger&end=Agadir
+    """
+    start_city = request.query_params.get('start')
+    end_city = request.query_params.get('end')
 
-# Redirige vers le Login si on n'est pas connecté
-@login_required 
-def map_view(request):
-    return render(request, 'fleet/map.html')
+    if not start_city or not end_city:
+        return Response({'error': 'Villes de départ et d\'arrivée requises'}, status=400)
+
+    try:
+        # Appel de l'algo (Protection contre les crashs)
+        distance, path = get_shortest_path(start_city, end_city)
+
+        if distance == float('inf'):
+            return Response({'error': 'Aucune route trouvée entre ces villes'}, status=404)
+
+        # Préparation des coordonnées pour Leaflet
+        path_coordinates = []
+        for city in path:
+            coord = CITIES_COORDS.get(city)
+            if coord:
+                path_coordinates.append([coord[1], coord[0]])
+
+        return Response({
+            'distance_km': round(distance),
+            'chemin': path,
+            'path_coordinates': path_coordinates
+        })
+
+    except Exception as e:
+        return Response({'error': f"Erreur interne : {str(e)}"}, status=500)

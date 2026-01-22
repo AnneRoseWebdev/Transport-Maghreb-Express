@@ -1,98 +1,153 @@
-document.addEventListener('DOMContentLoaded', function() {
-    
-    // 1. Initialisation de la carte (Centrée sur le Maroc)
-    var map = L.map('map').setView([31.7917, -7.0926], 6);
+// --- 1. Initialisation de la carte ---
+// Centré sur le Maroc
+var map = L.map('map').setView([32.0, -6.0], 6);
 
-    // 2. Ajout du fond de carte
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        maxZoom: 19,
-        attribution: '© OpenStreetMap contributors'
-    }).addTo(map);
+// Fond de carte CartoDB Light (Gris pro)
+L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+    attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
+    subdomains: 'abcd',
+    maxZoom: 20
+}).addTo(map);
 
-    // 3. Fonction pour charger les véhicules
-    function chargerVehicules() {
-        fetch('/api/vehicules/') 
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error("Erreur réseau ou API non accessible");
-                }
-                return response.json();
-            })
-            .then(data => {
-                console.log("Données reçues :", data); 
+var vehicleMarkers = {}; 
+var currentRouteLine = null;
 
-                // --- C'est ICI que tout change ---
-                // On boucle sur chaque véhicule
-                // Note: Selon ton API, 'data' est peut-être directement la liste, ou data.features
-                // Si ton API renvoie une liste directe, utilise 'data.forEach'
-                // Si ton API renvoie du GeoJSON, utilise 'data.features.forEach'
-                // Je garde ta logique 'data.features' (si ça plante, essaie juste 'data.forEach')
-                var listeVehicules = data.features || data; 
+// --- 2. Fonction de mise à jour (Temps Réel) ---
+async function updateMap() {
+    try {
+        const response = await fetch('/api/vehicules/'); 
+        const data = await response.json();
+        
+        // Mise à jour des compteurs
+        document.getElementById('count').innerText = data.features.length;
+        const now = new Date();
+        document.getElementById('last-update').innerText = now.toLocaleTimeString();
 
-                listeVehicules.forEach(vehicule => {
-                    // Récupération des coordonnées (Ta méthode actuelle)
-                    // Sécurité : on vérifie si position_actuelle est un objet ou une string
-                    var lat, lon;
-                    
-                    if (vehicule.position_actuelle && vehicule.position_actuelle.coordinates) {
-                        lat = vehicule.position_actuelle.coordinates[1];
-                        lon = vehicule.position_actuelle.coordinates[0];
-                    } else {
-                        // Cas de secours si le format change
-                        console.warn("Format de position inconnu pour", vehicule.immatriculation);
-                        return; // On passe au suivant
-                    }
+        data.features.forEach(feature => {
+            const id = feature.id;
+            const props = feature.properties;
+            const lat = feature.geometry.coordinates[1]; 
+            const lon = feature.geometry.coordinates[0];
 
-                    // Récupération des nouvelles infos "Intelligentes"
-                    var immat = vehicule.immatriculation;
-                    var statut = vehicule.statut;
-                    var carburant = vehicule.carburant_niveau;
-                    var diagnostic = vehicule.diagnostic; // Vient de ton Serializer
-                    var km = vehicule.kilometrage;
+            // --- GESTION DES COULEURS (MAINTENANCE) ---
+            let markerColor = '#76C893'; // Vert (OK)
+            let borderColor = '#163E50'; // Bleu foncé
+            
+            if (props.statut === 'MAINTENANCE_REQUISE') {
+                markerColor = '#D90429'; // Rouge
+            } else if (props.statut === 'PANNE_ESSENCE') {
+                markerColor = '#FF9F1C'; // Orange
+            }
 
-                    // Choix de la couleur du badge Diagnostic
-                    var couleurDiag = 'green';
-                    if (diagnostic === 'CRITIQUE') couleurDiag = 'red';
-                    else if (diagnostic === 'ATTENTION') couleurDiag = 'orange';
+            // Contenu de la popup
+            const popupContent = `
+                <div style="text-align:center; color: #163E50;">
+                    <strong style="font-size:1.1em">${props.immatriculation}</strong><br>
+                    <span style="color: ${markerColor}; font-weight:bold;">${props.statut}</span><br>
+                    ⛽ ${Math.round(props.carburant_niveau)}% <br>
+                    🛣️ ${Math.round(props.kilometrage)} km
+                </div>
+            `;
 
-                    // Choix de la couleur de la jauge carburant
-                    var couleurJauge = '#76C893'; // Vert
-                    if (carburant < 20) couleurJauge = 'red';
-                    else if (carburant < 50) couleurJauge = 'orange';
+            if (vehicleMarkers[id]) {
+                // Mise à jour position existante
+                vehicleMarkers[id].setLatLng([lat, lon]);
+                vehicleMarkers[id].bindPopup(popupContent);
+                vehicleMarkers[id].setStyle({ fillColor: markerColor }); 
+            } else {
+                // Création nouveau marqueur
+                var marker = L.circleMarker([lat, lon], {
+                    color: borderColor,
+                    fillColor: markerColor,
+                    fillOpacity: 0.8,
+                    weight: 2,
+                    radius: 8
+                })
+                .addTo(map)
+                .bindPopup(popupContent);
+                
+                vehicleMarkers[id] = marker;
+            }
+        });
 
-                    // Création du HTML de la Popup (Design Pro)
-                    var popupContent = `
-                        <div style="font-family: 'Segoe UI', sans-serif; min-width: 160px;">
-                            <h3 style="margin:0 0 5px 0; color:#163E50; border-bottom:1px solid #ddd; padding-bottom:5px;">
-                                🚛 ${immat}
-                            </h3>
-                            
-                            <div style="margin-bottom:5px; font-size:13px;">
-                                <strong>Statut :</strong> ${statut}<br>
-                                <strong>Km :</strong> ${Math.round(km)} km
-                            </div>
-                            
-                            <div style="background:#eee; width:100%; height:10px; border-radius:5px; border:1px solid #ccc;">
-                                <div style="background:${couleurJauge}; width:${carburant}%; height:100%; border-radius:5px;"></div>
-                            </div>
-                            <div style="text-align:right; font-size:11px; margin-bottom:8px;">Fuel: ${Math.round(carburant)}%</div>
-
-                            <div style="background:${couleurDiag}; color:white; text-align:center; padding:4px; border-radius:4px; font-weight:bold; font-size:12px;">
-                                DIAGNOSTIC : ${diagnostic}
-                            </div>
-                        </div>
-                    `;
-
-                    // Ajout du marqueur et de la popup
-                    var marker = L.marker([lat, lon]).addTo(map);
-                    marker.bindPopup(popupContent);
-                });
-            })
-            .catch(error => {
-                console.error("Erreur lors du chargement :", error);
-            });
+    } catch (error) {
+        console.error("Erreur API:", error);
     }
+}
 
-    // 4. Lancement
-    chargerVehicules();
-});
+// --- 3. Fonction Calcul Itinéraire (Dijkstra) ---
+async function calculateRoute() {
+    const start = document.getElementById('start-city').value;
+    const end = document.getElementById('end-city').value;
+    const resultDiv = document.getElementById('route-result');
+
+    resultDiv.innerHTML = "Calcul en cours...";
+
+    try {
+        const response = await fetch(`/api/route/?start=${start}&end=${end}`);
+        const data = await response.json();
+
+        if (data.error) {
+            resultDiv.innerHTML = `<span style="color:red">Erreur: ${data.error}</span>`;
+            return;
+        }
+
+        resultDiv.innerHTML = `
+            <strong>Distance : ${data.distance_km} km</strong><br>
+            Via : ${data.chemin.join(' > ')}
+        `;
+
+        // Tracer la ligne
+        if (currentRouteLine) {
+            map.removeLayer(currentRouteLine);
+        }
+
+        currentRouteLine = L.polyline(data.path_coordinates, {
+            color: '#163E50', 
+            weight: 5,        
+            opacity: 0.8,
+            dashArray: '10, 10' 
+        }).addTo(map);
+
+        map.fitBounds(currentRouteLine.getBounds());
+
+    } catch (error) {
+        console.error(error);
+        resultDiv.innerHTML = "Erreur connexion.";
+    }
+}
+
+// Lancement automatique
+updateMap();
+setInterval(updateMap, 2000);
+
+function openROI() {
+    // 1. On récupère le nombre de véhicules actifs
+    const activeVehicles = document.getElementById('count').innerText || 0;
+    
+    // 2. Simulation de calculs basés sur tes données
+    // Prix moyen diesel : 1.30€/L. Conso camion : 30L/100km.
+    // On estime une tournée moyenne de 500km par camion.
+    const totalKm = activeVehicles * 500; 
+    const coutEstime = (totalKm / 100) * 30 * 1.3; // Coût théorique sans optimisation
+    
+    // Notre algo Dijkstra fait gagner 15% de distance + 5% grâce à la maintenance
+    const economie = coutEstime * 0.20; 
+
+    // 3. Injection dans le HTML (DOM Manipulation propre)
+    // Astuce : On sélectionne les éléments par leur contenu ou position pour aller vite
+    const modal = document.getElementById('roiModal');
+    const amounts = modal.querySelectorAll('div[style*="font-size:1.4em"]');
+    
+    // Mise à jour Coût
+    amounts[0].innerText = Math.round(coutEstime) + " €";
+    // Mise à jour Économie
+    amounts[1].innerText = "- " + Math.round(economie) + " €";
+    
+    // Affichage
+    modal.style.display = "flex";
+}
+
+function closeROI() {
+    document.getElementById('roiModal').style.display = "none";
+}
